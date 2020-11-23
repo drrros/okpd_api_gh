@@ -1,0 +1,41 @@
+  version: '3'
+    
+  services:
+    db:
+      restart: always
+      volumes:
+        - okpd_api_postgres_data:/var/lib/postgresql/data/
+      image: postgres:12.3
+      environment:
+        - POSTGRES_DB=okpd_api
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=
+      container_name: okpd_api_db
+    web:
+      build: .
+      command: gunicorn -t 180 -w 3 okpd_api.wsgi:application --bind 0.0.0.0:8000
+      restart: always
+      env_file:
+        - prod.env
+      volumes:
+        - okpd_api_static_volume:/code/static
+      expose:
+        - 8000
+      depends_on:
+        - db
+      container_name: okpd_api_web
+    nginx:
+      build: ./nginx
+      restart: always
+      container_name: okpd_api_nginx
+      ports:
+        - 1342:80
+      volumes:
+        - okpd_api_static_volume:/code/static
+      depends_on:
+        - web
+        - db
+    
+  volumes:
+    okpd_api_postgres_data:
+    okpd_api_static_volume:
